@@ -5,7 +5,7 @@
 | Path | Role |
 |------|------|
 | `install.ps1` | Winget dependency checks, copies configs to user paths, font notice, backups for WT settings and PowerShell profile. |
-| `fastfetch/dragon.txt` | Multi-color ASCII logo; Fastfetch `${1}`–`${4}` tokens. |
+| `fastfetch/dragon.txt` | Multi-color ASCII logo; Fastfetch `$1`–`$4` placeholders (not `${1}` — see wiki). |
 | `fastfetch/config.jsonc` | Fastfetch layout, Yoru logo colors, modules, separator, footer line. |
 | `starship/starship.toml` | Single-line Starship prompt; directory, git, `›` character. |
 | `terminal/settings.json` | Windows Terminal global + profile defaults, **Yoru** color scheme. |
@@ -32,7 +32,7 @@ Backups written by `install.ps1`: `settings.json.bak`, `$PROFILE.bak`.
 | `README.md`, `install.ps1` (comment + `$RepoRawBase`), remote install one-liner | `OWNER` → GitHub user or org (`github.com/OWNER/yoru-terminal`). |
 | `terminal/settings.json` | `{powershell-guid}` → real profile GUID; match `defaultProfile` and the profile entry in `profiles.list`. |
 | `terminal/settings.json` | `profiles.defaults.font.face` if not using 0xProto Nerd Font Mono. |
-| `fastfetch/config.jsonc` | `logo.source` is `~/.config/fastfetch/dragon.txt` (Unix-style tilde); Fastfetch resolves this on Windows — keep aligned with actual `dragon.txt` location. |
+| `fastfetch/config.jsonc` | `logo.source` uses `%USERPROFILE%/.config/fastfetch/dragon.txt` for Windows env expansion (`~` only on Fastfetch v2.41+). |
 | `powershell/profile.ps1` | `$env:STARSHIP_CONFIG` default: `$HOME\.config\starship\starship.toml` — change if you relocate the file. |
 | `powershell/profile.ps1` | Fastfetch `--config` path: `$HOME\.config\fastfetch\config.jsonc` — change if relocated. |
 | `powershell/profile.ps1` | Comment footer `github.com/OWNER/yoru-terminal` → real repo URL. |
