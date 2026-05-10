@@ -1,0 +1,52 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "file",
+    "source": "~/.config/fastfetch/dragon.txt",
+    "position": "left",
+    "padding": {
+      "right": 2
+    },
+    "color": {
+      "1": "#C0392B",
+      "2": "#E8D5C4",
+      "3": "#7B1A1A",
+      "4": "#7A7A7A"
+    }
+  },
+  "display": {
+    "separator": " » ",
+    "brightColor": false,
+    "color": {
+      "keys": "#C0392B",
+      "separator": "#7A7A7A"
+    }
+  },
+  "modules": [
+    "os",
+    "host",
+    "kernel",
+    "shell",
+    "terminal",
+    "cpu",
+    "gpu",
+    "memory",
+    {
+      "type": "disk",
+      "folders": ["C:\\"]
+    },
+    "uptime",
+    {
+      "type": "separator",
+      "string": "—",
+      "times": 0,
+      "outputColor": "#7A7A7A"
+    },
+    {
+      "type": "custom",
+      "key": "",
+      "format": "yoru terminal · v1.0.0",
+      "outputColor": "#7A7A7A"
+    }
+  ]
+}

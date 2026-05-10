@@ -1,0 +1,38 @@
+add_newline = false
+format = "$directory$git_branch$git_status$character"
+
+[directory]
+style = "fg:#D4CFC9"
+read_only_style = "fg:#D4CFC9"
+fish_style_pwd_dir_length = 2
+truncation_length = 32
+truncate_to_repo = false
+format = "[$path]($style)  "
+
+[git_branch]
+style = "fg:#888888"
+symbol = "⎇ "
+format = "[$symbol$branch]($style) "
+
+[git_status]
+style = "fg:#7B1A1A"
+format = "([$all_status$ahead_behind]($style) )"
+conflicted = "!"
+untracked = "?"
+modified = "*"
+staged = "+"
+renamed = "»"
+deleted = "×"
+stashed = ""
+ahead = ""
+behind = ""
+diverged = ""
+up_to_date = ""
+
+[character]
+success_symbol = "[›](fg:#C0392B) "
+error_symbol = "[›](fg:#7B1A1A) "
+vimcmd_symbol = "[›](fg:#C0392B) "
+vimcmd_replace_one_symbol = "[›](fg:#C0392B) "
+vimcmd_replace_symbol = "[›](fg:#C0392B) "
+vimcmd_visual_symbol = "[›](fg:#C0392B) "
