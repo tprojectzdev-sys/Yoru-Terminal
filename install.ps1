@@ -1,285 +1,263 @@
 #Requires -Version 5.1
 <#
-  Yoru Terminal — one-command installer.
-  Local:  .\install.ps1
-  Remote: irm https://raw.githubusercontent.com/OWNER/yoru-terminal/main/install.ps1 | iex
+  Yoru Terminal — installer (always downloads configs from GitHub raw).
+  irm https://raw.githubusercontent.com/tprojectzdev-sys/yoru-terminal/main/install.ps1 | iex
 #>
 
-$ErrorActionPreference = 'Continue'
+$ErrorActionPreference = 'Stop'
 
-$RepoRawBase = 'https://raw.githubusercontent.com/OWNER/yoru-terminal/main'
-if ($PSScriptRoot) {
-    $ContentRoot = $PSScriptRoot
-} else {
-    $ContentRoot = $null
+$script:GitHubOwner = 'tprojectzdev-sys'
+$script:GitHubRepo = 'yoru-terminal'
+$script:GitHubBranch = 'main'
+$script:RawBase = "https://raw.githubusercontent.com/$GitHubOwner/$GitHubRepo/$GitHubBranch"
+
+function Get-IsAdmin {
+    ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-function Get-YoruFile {
-    param(
-        [Parameter(Mandatory)][string]$RelativePath
-    )
-    $rel = $RelativePath -replace '/', '\'
-    if ($ContentRoot) {
-        $local = Join-Path $ContentRoot $rel
-        if (-not (Test-Path -LiteralPath $local)) {
-            throw "Missing repo file: $local (run from repo root or use irm|iex from GitHub)"
-        }
-        return $local
+function Write-AdminHint {
+    if (-not (Get-IsAdmin)) {
+        Write-Host '  Re-run as Administrator if this was a permission error.' -ForegroundColor Yellow
     }
-    $url = "$RepoRawBase/$($RelativePath -replace '\\', '/')"
-    $tmp = [System.IO.Path]::GetTempFileName()
+}
+
+function Invoke-YoruDownload {
+    param(
+        [Parameter(Mandatory)][string]$RepoRelativePath,
+        [Parameter(Mandatory)][string]$DestinationPath
+    )
+    $uri = "$RawBase/$($RepoRelativePath -replace '\\', '/')"
     try {
-        Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing
-        return $tmp
+        $dir = Split-Path -Parent $DestinationPath
+        if (-not (Test-Path -LiteralPath $dir)) {
+            New-Item -ItemType Directory -Path $dir -Force -ErrorAction Stop | Out-Null
+        }
+        Invoke-WebRequest -Uri $uri -OutFile $DestinationPath -UseBasicParsing -ErrorAction Stop
     } catch {
-        Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
-        throw "Download failed ($url): $($_.Exception.Message)"
+        throw "Download or write failed for '$RepoRelativePath' -> '$DestinationPath' ($uri): $($_.Exception.Message)"
     }
 }
 
-function Copy-YoruFile {
-    param(
-        [Parameter(Mandatory)][string]$RelativePath,
-        [Parameter(Mandatory)][string]$Destination
-    )
-    $src = Get-YoruFile -RelativePath $RelativePath
+function Invoke-YoruDownloadText {
+    param([Parameter(Mandatory)][string]$RepoRelativePath)
+    $uri = "$RawBase/$($RepoRelativePath -replace '\\', '/')"
     try {
-        $destDir = Split-Path -Parent $Destination
-        if (-not (Test-Path -LiteralPath $destDir)) {
-            New-Item -ItemType Directory -Path $destDir -Force -ErrorAction Stop | Out-Null
-        }
-        Copy-Item -LiteralPath $src -Destination $Destination -Force -ErrorAction Stop
-    } finally {
-        if (-not $ContentRoot) {
-            Remove-Item -LiteralPath $src -Force -ErrorAction SilentlyContinue
-        }
+        $r = Invoke-WebRequest -Uri $uri -UseBasicParsing -ErrorAction Stop
+        return $r.Content
+    } catch {
+        throw "Download failed for '$RepoRelativePath' ($uri): $($_.Exception.Message)"
     }
 }
 
-function Test-Winget {
+function Test-WingetAvailable {
     return [bool](Get-Command winget -CommandType Application -ErrorAction SilentlyContinue)
 }
 
 function Test-WingetPackageInstalled {
-    param([Parameter(Mandatory)][string]$Id)
-    winget list -e --id $Id --accept-source-agreements 2>&1 | Out-Null
+    param([Parameter(Mandatory)][string]$PackageId)
+    $null = & winget list --id $PackageId -e --accept-source-agreements 2>&1
     return ($LASTEXITCODE -eq 0)
 }
 
-function Install-WingetPackage {
-    param([Parameter(Mandatory)][string]$Id)
-    Write-Host "  [+] installing $Id..."
-    $out = & winget install -e --id $Id --accept-source-agreements --accept-package-agreements --silent 2>&1 |
+function Install-WingetPackageSilently {
+    param([Parameter(Mandatory)][string]$PackageId)
+    $out = & winget install --id $PackageId -e --silent --accept-package-agreements --accept-source-agreements 2>&1 |
         Out-String
     if ($LASTEXITCODE -eq 0) { return }
-    if ($out -match '(?i)already installed|found an existing package') {
+    if ($out -match '(?i)already installed|found an existing package') { return }
+    throw "winget install failed for $PackageId (exit $LASTEXITCODE): $out"
+}
+
+function Install-WingetToolIfMissing {
+    param(
+        [Parameter(Mandatory)][string]$PackageId,
+        [Parameter(Mandatory)][string]$DisplayName
+    )
+    if (Test-WingetPackageInstalled -PackageId $PackageId) {
+        Write-Host "  [ok] $DisplayName"
         return
     }
-    throw "winget install failed for $Id (exit $LASTEXITCODE): $out"
+    Write-Host "  [+] installing $DisplayName..."
+    Install-WingetPackageSilently -PackageId $PackageId
+    Write-Host "  [ok] $DisplayName"
 }
 
-function Test-WingetUpgradeAvailable {
-    param([Parameter(Mandatory)][string]$Id)
-    if (-not (Test-WingetPackageInstalled -Id $Id)) { return $false }
-    $out = winget upgrade -e --id $Id --include-unknown --accept-source-agreements 2>&1 | Out-String
-    if ($out -match '(?i)No available upgrade|No applicable upgrade|No upgrades available') {
-        return $false
-    }
-    if ($out -match [regex]::Escape($Id)) { return $true }
-    return $false
-}
-
-function Invoke-WingetUpgradePrompt {
-    param(
-        [Parameter(Mandatory)][string]$Id,
-        [Parameter(Mandatory)][string]$Label
-    )
-    if (-not (Test-WingetUpgradeAvailable -Id $Id)) { return }
-    $ans = Read-Host "  A newer $Label is available via winget. Update now? (Y/n)"
-    if ($ans -eq '' -or $ans -match '^[Yy]') {
-        Write-Host "  [+] upgrading $Label..."
-        $upOut = & winget upgrade -e --id $Id --accept-source-agreements --accept-package-agreements --silent 2>&1 |
-            Out-String
-        if ($LASTEXITCODE -ne 0) {
-            $snippet = if ($upOut.Length -gt 400) { $upOut.Substring(0, 400) + '…' } else { $upOut }
-            Write-Host "  [!] winget upgrade exited with $LASTEXITCODE for $Id. Output: $snippet"
-        }
-    }
-}
-
-function Ensure-Dependency {
-    param(
-        [Parameter(Mandatory)][string]$Id,
-        [Parameter(Mandatory)][string]$Label,
-        [Parameter()][string]$CommandName = $null
-    )
-    $hasCmd = $false
-    if ($CommandName) {
-        $hasCmd = [bool](Get-Command $CommandName -CommandType Application -ErrorAction SilentlyContinue)
-    }
-    $hasPkg = Test-WingetPackageInstalled -Id $Id
-    if ($hasCmd -or $hasPkg) {
-        Write-Host "  [ok] $Label"
-        if (Test-WingetPackageInstalled -Id $Id) {
-            Invoke-WingetUpgradePrompt -Id $Id -Label $Label
-        }
-        return
-    }
+function Test-0xProtoFontHKLM {
+    $key = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
+    if (-not (Test-Path -LiteralPath $key)) { return $false }
     try {
-        Install-WingetPackage -Id $Id
-        Write-Host "  [ok] $Label"
-    } catch {
-        Write-Host "  [!] $Label install failed: $($_.Exception.Message)"
-        if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-            Write-Host "  Try re-running this installer from an elevated PowerShell (Run as administrator)."
-        }
-        throw
-    }
-}
-
-function Test-0xProtoNerdFont {
-    $keys = @(
-        'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts',
-        'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
-    )
-    foreach ($key in $keys) {
-        if (-not (Test-Path -LiteralPath $key)) { continue }
-        $p = Get-ItemProperty -LiteralPath $key -ErrorAction SilentlyContinue
-        if (-not $p) { continue }
+        $p = Get-ItemProperty -LiteralPath $key -ErrorAction Stop
         foreach ($prop in $p.PSObject.Properties) {
             if ($prop.Name -match '^PS') { continue }
-            if ($prop.Name -match '0xProto.*Nerd Font Mono') {
-                return $true
-            }
+            if ($prop.Name -like '*0xProto*') { return $true }
         }
+    } catch {
+        Write-Host "  [!] Could not read HKLM Fonts (font check skipped): $($_.Exception.Message)" -ForegroundColor Yellow
+        return $false
     }
     return $false
 }
 
-# --- header ---
-Write-Host ''
-Write-Host '夜 Yoru Terminal — Installer'
-Write-Host '────────────────────────────'
-Write-Host ''
-
-if (-not (Test-Winget)) {
-    Write-Host '[!] winget not found. Install App Installer from the Microsoft Store, then re-run.'
-    exit 1
-}
-
 try {
-    Ensure-Dependency -Id 'Fastfetch-cli.Fastfetch' -Label 'fastfetch' -CommandName 'fastfetch'
-    Ensure-Dependency -Id 'Starship.Starship' -Label 'starship' -CommandName 'starship'
-    Ensure-Dependency -Id 'Microsoft.WindowsTerminal' -Label 'Windows Terminal' -CommandName 'wt'
-} catch {
     Write-Host ''
-    Write-Host "[!] Dependency step failed: $($_.Exception.Message)"
-    exit 1
-}
+    Write-Host '夜 Yoru Terminal — Installer' -ForegroundColor Red
+    Write-Host '────────────────────────────' -ForegroundColor DarkRed
+    Write-Host ''
 
-Write-Host ''
-
-# --- config copy ---
-$fastfetchDir = Join-Path $HOME '.config\fastfetch'
-$starshipDir = Join-Path $HOME '.config\starship'
-
-foreach ($d in @($fastfetchDir, $starshipDir)) {
-    try {
-        if (-not (Test-Path -LiteralPath $d)) {
-            New-Item -ItemType Directory -Path $d -Force -ErrorAction Stop | Out-Null
-        }
-    } catch {
-        Write-Host "  [!] Could not create directory ${d}: $($_.Exception.Message)"
-        if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-            Write-Host '  If this was a permission error, re-run as administrator.'
-        }
+    if (-not (Test-WingetAvailable)) {
+        Write-Host '[!] winget not found. Install App Installer from the Microsoft Store, then re-run.' -ForegroundColor Red
         exit 1
     }
-}
 
-foreach ($copy in @(
-        @{ Rel = 'fastfetch\dragon.txt'; Dest = (Join-Path $fastfetchDir 'dragon.txt'); Label = 'fastfetch/dragon.txt' }
-        @{ Rel = 'fastfetch\config.jsonc'; Dest = (Join-Path $fastfetchDir 'config.jsonc'); Label = 'fastfetch/config.jsonc' }
-        @{ Rel = 'starship\starship.toml'; Dest = (Join-Path $starshipDir 'starship.toml'); Label = 'starship/starship.toml' }
-    )) {
+    $pwshInstalledNow = $false
     try {
-        Copy-YoruFile -RelativePath $copy.Rel -Destination $copy.Dest
-        Write-Host "  [ok] $($copy.Label)"
+        Install-WingetToolIfMissing -PackageId 'Fastfetch-cli.Fastfetch' -DisplayName 'fastfetch'
     } catch {
-        Write-Host "  [!] Failed $($copy.Label): $($_.Exception.Message)"
-        if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-            Write-Host '  If this was a permission error, re-run as administrator.'
-        }
+        Write-Host "[!] fastfetch step failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-AdminHint
         exit 1
     }
-}
 
-$wtLocalState = Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState'
-if (-not (Test-Path -LiteralPath $wtLocalState)) {
-    $pkgStable = Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Packages') -Directory -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -like 'Microsoft.WindowsTerminal_*' -and $_.Name -notlike '*TerminalPreview*' } |
-        Select-Object -First 1
-    if ($pkgStable) {
-        $wtLocalState = Join-Path $pkgStable.FullName 'LocalState'
-    } else {
-        $pkgAny = Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Packages') -Directory -Filter 'Microsoft.WindowsTerminal*' -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-        if ($pkgAny) {
-            $wtLocalState = Join-Path $pkgAny.FullName 'LocalState'
+    try {
+        Install-WingetToolIfMissing -PackageId 'Starship.Starship' -DisplayName 'starship'
+    } catch {
+        Write-Host "[!] starship step failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-AdminHint
+        exit 1
+    }
+
+    try {
+        if (Test-WingetPackageInstalled -PackageId 'Microsoft.PowerShell') {
+            Write-Host '  [ok] PowerShell 7'
+        } else {
+            Write-Host '  [+] installing PowerShell 7...'
+            Install-WingetPackageSilently -PackageId 'Microsoft.PowerShell'
+            Write-Host '  [ok] PowerShell 7'
+            $pwshInstalledNow = $true
         }
+    } catch {
+        Write-Host "[!] PowerShell 7 step failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-AdminHint
+        exit 1
     }
-}
-$wtSettings = Join-Path $wtLocalState 'settings.json'
 
-try {
-    if (-not (Test-Path -LiteralPath $wtLocalState)) {
-        throw "Windows Terminal LocalState folder not found. Install Windows Terminal from the Store, then re-run."
+    if ($pwshInstalledNow) {
+        Write-Host ''
+        Write-Host '  [!] PowerShell 7 was just installed. Close all terminals, reopen Windows Terminal,' -ForegroundColor Yellow
+        Write-Host '      set PowerShell 7 as the default profile, then run this installer again if needed.' -ForegroundColor Yellow
+        Write-Host ''
     }
-    if (Test-Path -LiteralPath $wtSettings) {
-        Copy-Item -LiteralPath $wtSettings -Destination "$wtSettings.bak" -Force -ErrorAction Stop
-        Write-Host '  [ok] Windows Terminal settings.json.bak'
-    }
-    Copy-YoruFile -RelativePath 'terminal\settings.json' -Destination $wtSettings
-    Write-Host '  [ok] terminal/settings.json'
-} catch {
-    Write-Host "  [!] Windows Terminal settings copy failed: $($_.Exception.Message)"
-    if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-        Write-Host '  If this was a permission error, re-run as administrator.'
-    }
-    exit 1
-}
 
-try {
+    $fastfetchDir = Join-Path $HOME '.config\fastfetch'
+    $starshipDir = Join-Path $HOME '.config\starship'
+    try {
+        New-Item -Force -ItemType Directory -Path $fastfetchDir -ErrorAction Stop | Out-Null
+        New-Item -Force -ItemType Directory -Path $starshipDir -ErrorAction Stop | Out-Null
+    } catch {
+        Write-Host "[!] Could not create config directories: $($_.Exception.Message)" -ForegroundColor Red
+        Write-AdminHint
+        exit 1
+    }
+
+    try {
+        Invoke-YoruDownload -RepoRelativePath 'fastfetch/dragon.txt' -DestinationPath (Join-Path $fastfetchDir 'dragon.txt')
+        Write-Host '  [ok] dragon.txt'
+    } catch {
+        Write-Host "[!] $($_.Exception.Message)" -ForegroundColor Red
+        Write-AdminHint
+        exit 1
+    }
+
+    try {
+        Invoke-YoruDownload -RepoRelativePath 'fastfetch/config.jsonc' -DestinationPath (Join-Path $fastfetchDir 'config.jsonc')
+        Write-Host '  [ok] config.jsonc'
+    } catch {
+        Write-Host "[!] $($_.Exception.Message)" -ForegroundColor Red
+        Write-AdminHint
+        exit 1
+    }
+
+    try {
+        Invoke-YoruDownload -RepoRelativePath 'starship/starship.toml' -DestinationPath (Join-Path $starshipDir 'starship.toml')
+        Write-Host '  [ok] starship.toml'
+    } catch {
+        Write-Host "[!] $($_.Exception.Message)" -ForegroundColor Red
+        Write-AdminHint
+        exit 1
+    }
+
+    $wtSettings = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
+    try {
+        $wtDir = Split-Path -Parent $wtSettings
+        if (-not (Test-Path -LiteralPath $wtDir)) {
+            throw "Windows Terminal LocalState not found at $wtDir. Install Windows Terminal from the Store first."
+        }
+        if (Test-Path -LiteralPath $wtSettings) {
+            Copy-Item -LiteralPath $wtSettings -Destination "$wtSettings.bak" -Force -ErrorAction Stop
+            Write-Host '  [ok] settings.json.bak'
+        }
+        Invoke-YoruDownload -RepoRelativePath 'terminal/settings.json' -DestinationPath $wtSettings
+        Write-Host '  [ok] terminal/settings.json'
+        Write-Host '  [!] Replace placeholder GUIDs in settings.json with your real PowerShell 7 profile GUID.' -ForegroundColor Yellow
+    } catch {
+        Write-Host "[!] Windows Terminal settings step failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-AdminHint
+        exit 1
+    }
+
     $prof = $PROFILE
     if (-not $prof) {
-        throw 'PowerShell $PROFILE path is empty.'
+        Write-Host '[!] $PROFILE is empty; cannot append Yoru profile.' -ForegroundColor Red
+        exit 1
     }
     $profDir = Split-Path -Parent $prof
-    if (-not (Test-Path -LiteralPath $profDir)) {
-        New-Item -ItemType Directory -Path $profDir -Force -ErrorAction Stop | Out-Null
+    try {
+        if (-not (Test-Path -LiteralPath $profDir)) {
+            New-Item -ItemType Directory -Path $profDir -Force -ErrorAction Stop | Out-Null
+        }
+        if (Test-Path -LiteralPath $prof) {
+            $profBak = Join-Path $profDir 'profile.ps1.bak'
+            Copy-Item -LiteralPath $prof -Destination $profBak -Force -ErrorAction Stop
+            Write-Host '  [ok] profile.ps1.bak'
+        }
+        $yoruBlockMarker = '# YORU_TERMINAL_PROFILE_BLOCK'
+        $yoruText = Invoke-YoruDownloadText -RepoRelativePath 'powershell/profile.ps1'
+        if (Test-Path -LiteralPath $prof) {
+            $existing = Get-Content -LiteralPath $prof -Raw -ErrorAction Stop
+            if ($existing -and $existing.Contains($yoruBlockMarker)) {
+                Write-Host '  [ok] Yoru profile block already present; skipped append.' -ForegroundColor DarkGray
+            } else {
+                Add-Content -LiteralPath $prof -Value "`n$yoruBlockMarker`n" -Encoding utf8 -ErrorAction Stop
+                Add-Content -LiteralPath $prof -Value $yoruText -Encoding utf8 -ErrorAction Stop
+                Write-Host '  [ok] Appended Yoru profile.ps1 to $PROFILE'
+            }
+        } else {
+            Add-Content -LiteralPath $prof -Value "$yoruBlockMarker`n" -Encoding utf8 -ErrorAction Stop
+            Add-Content -LiteralPath $prof -Value $yoruText -Encoding utf8 -ErrorAction Stop
+            Write-Host '  [ok] Created $PROFILE with Yoru profile.ps1'
+        }
+    } catch {
+        Write-Host "[!] PowerShell profile step failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-AdminHint
+        exit 1
     }
-    if (Test-Path -LiteralPath $prof) {
-        Copy-Item -LiteralPath $prof -Destination "$prof.bak" -Force -ErrorAction Stop
-        Write-Host '  [ok] PowerShell profile.bak'
+
+    if (-not (Test-0xProtoFontHKLM)) {
+        Write-Host ''
+        Write-Host '[!] Font not installed: 0xProto Nerd Font Mono' -ForegroundColor Yellow
+        Write-Host '    Download from: https://github.com/ryanoasis/nerd-fonts/releases' -ForegroundColor Yellow
+        Write-Host '    Install manually then restart Windows Terminal' -ForegroundColor Yellow
+        Write-Host ''
     }
-    Copy-YoruFile -RelativePath 'powershell\profile.ps1' -Destination $prof
-    Write-Host '  [ok] powershell/profile.ps1 → $PROFILE'
+
+    Write-Host '────────────────────────────' -ForegroundColor DarkRed
+    Write-Host '[done] Restart Windows Terminal to apply changes.' -ForegroundColor Red
+    Write-Host '       If dragon shows token text like ${1}, set type to ''file'' in config.jsonc' -ForegroundColor DarkGray
+    Write-Host '       Replace placeholder GUIDs in settings.json with your actual PowerShell 7 GUID' -ForegroundColor DarkGray
+    Write-Host ''
 } catch {
-    Write-Host "  [!] PowerShell profile copy failed: $($_.Exception.Message)"
-    if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-        Write-Host '  If this was a permission error, re-run as administrator.'
-    }
+    Write-Host "[!] Unexpected failure: $($_.Exception.Message)" -ForegroundColor Red
+    Write-AdminHint
     exit 1
 }
-
-Write-Host ''
-if (-not (Test-0xProtoNerdFont)) {
-    Write-Host '  Font "0xProto Nerd Font Mono" not detected.'
-    Write-Host '  Install manually from: https://github.com/ryanoasis/nerd-fonts/releases'
-    Write-Host ''
-}
-
-Write-Host '────────────────────────────'
-Write-Host '[done] Yoru Terminal is ready.'
-Write-Host 'Restart Windows Terminal to apply all changes.'
-Write-Host ''

@@ -1,7 +1,6 @@
 <div align="center">
 
-<!-- Placeholder for Hero Banner -->
-<img src="https://via.placeholder.com/1200x300/111111/ff3333?text=YORU+TERMINAL+BANNER" alt="Yoru Terminal Banner" width="100%">
+<img src="assets/banner.png" alt="Yoru Terminal banner" width="100%">
 
 # Yoru Terminal
  **A Premium Theme Ecosystem for Windows Terminal** 
@@ -65,17 +64,9 @@ The inaugural visual identity of the Yoru Terminal platform draws heavy inspirat
 <!-- Use standard Markdown image syntax to replace these placeholders -->
 
 <div align="center">
-  <img src="https://via.placeholder.com/800x450/1a1a1a/ff3333?text=Cinematic+Terminal+Screenshot+1" alt="Yoru Terminal Interface">
+  <img src="assets/gallery-terminal.png" alt="Yoru Terminal — Windows Terminal with Fastfetch">
   <br>
-  <em>The Sumi-e Crimson environment featuring custom Fastfetch integration.</em>
-</div>
-
-<br>
-
-<div align="center">
-  <img src="https://via.placeholder.com/800x450/1a1a1a/ff3333?text=Split+Pane+Workspace+Screenshot+2" alt="Split Pane Layout">
-  <br>
-  <em>Acrylic transparency behavior and multi-pane readability.</em>
+  <em>Sumi-e Crimson: Fastfetch, Starship, and the Yoru palette in Windows Terminal.</em>
 </div>
 
 ## Installation
