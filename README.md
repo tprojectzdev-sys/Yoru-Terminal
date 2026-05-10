@@ -13,6 +13,20 @@
 
 ---
 
+## Quick install
+
+Run in **PowerShell** (Windows Terminal or `pwsh`):
+
+```powershell
+irm https://raw.githubusercontent.com/tprojectzdev-sys/yoru-terminal/main/install.ps1 | iex
+```
+
+This uses **winget** to install **fastfetch**, **Starship**, and **PowerShell 7** if needed, downloads configs from this repo, backs up your Windows Terminal `settings.json` and PowerShell profile, and **appends** the Yoru profile block. Install **Windows Terminal** from the Microsoft Store first if you do not have it (the script needs its `settings.json` path).
+
+If you fork the repo, change `tprojectzdev-sys/yoru-terminal` in the URL to your `OWNER/REPO`.
+
+---
+
 ## Introduction
  **Yoru Terminal** is a curated aesthetic and theme supplier platform designed exclusively for Windows Terminal. It transcends standard dotfile repositories by providing a cohesive, highly-designed visual architecture for your workstation. 
 
@@ -71,6 +85,8 @@ The inaugural visual identity of the Yoru Terminal platform draws heavy inspirat
 
 ## Installation
 
+Prefer **[Quick install](#quick-install)** above. Manual steps below are optional.
+
 ### Prerequisites
 
 To utilize the Yoru Terminal ecosystem, ensure your system meets the following requirements:
@@ -79,7 +95,7 @@ To utilize the Yoru Terminal ecosystem, ensure your system meets the following r
 * **Fastfetch** (Available via `winget install fastfetch`)
 * **Nerd Fonts** (We recommend *JetBrainsMono NF* or *CaskaydiaCove NF* for optimal iconography rendering)
 
-### Step-by-Step Setup
+### Step-by-Step Setup (manual)
 
 1. **Clone the Repository**    ```powershell
    git clone https://github.com/yourusername/yoru-terminal.git
