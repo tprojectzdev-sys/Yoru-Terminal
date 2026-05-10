@@ -1,0 +1,63 @@
+name: Visual / rendering problem
+description: Fonts, colors, fastfetch layout, transparency, or layout glitches
+labels: ['visual']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Screenshots help a lot. Please run `.\install.ps1 -Doctor` and paste output below if possible.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What looks wrong?
+    validations:
+      required: true
+  - type: input
+    id: windows_version
+    attributes:
+      label: Windows version
+    validations:
+      required: true
+  - type: input
+    id: wt_version
+    attributes:
+      label: Windows Terminal version
+    validations:
+      required: false
+  - type: input
+    id: ps_version
+    attributes:
+      label: PowerShell version
+    validations:
+      required: true
+  - type: dropdown
+    id: host
+    attributes:
+      label: Terminal host
+      options:
+        - Windows Terminal
+        - Classic console (conhost)
+        - VS Code terminal
+        - Other / not sure
+    validations:
+      required: true
+  - type: input
+    id: install_command
+    attributes:
+      label: Install command used
+    validations:
+      required: false
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Doctor output
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshot links or attach in GitHub UI
+      description: Drag images into the comment after submit, or link to files.
+    validations:
+      required: false

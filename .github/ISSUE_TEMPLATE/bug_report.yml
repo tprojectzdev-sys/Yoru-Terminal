@@ -1,0 +1,71 @@
+name: Bug report
+description: Something broke after install or in daily use
+labels: ['bug']
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: false
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: windows_version
+    attributes:
+      label: Windows version
+    validations:
+      required: true
+  - type: input
+    id: wt_version
+    attributes:
+      label: Windows Terminal version
+    validations:
+      required: false
+  - type: input
+    id: ps_version
+    attributes:
+      label: PowerShell version
+    validations:
+      required: true
+  - type: dropdown
+    id: host
+    attributes:
+      label: Where does it happen?
+      options:
+        - Windows Terminal
+        - Classic console (conhost)
+        - VS Code terminal
+        - Other / not sure
+    validations:
+      required: true
+  - type: input
+    id: install_command
+    attributes:
+      label: Install command used (if relevant)
+    validations:
+      required: false
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Doctor output
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      render: markdown
+    validations:
+      required: false

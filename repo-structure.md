@@ -4,7 +4,8 @@
 
 | Path | Role |
 |------|------|
-| `install.ps1` | Winget dependency checks, copies configs to user paths, font notice, backups for WT settings and PowerShell profile. |
+| `install.ps1` | Winget dependency checks (Full), copies configs, font notice, timestamped backups, modes: `-Full`, `-Minimal`, `-Doctor`, `-Restore`, `-Uninstall`. Local clone uses files next to script instead of raw GitHub. |
+| `doctor.ps1` / `restore.ps1` / `uninstall.ps1` | Thin wrappers forwarding to `install.ps1`. |
 | `fastfetch/dragon.txt` | Multi-color ASCII logo; Fastfetch `$1`–`$4` placeholders (not `${1}` — see wiki). |
 | `fastfetch/config.jsonc` | Fastfetch layout, Yoru logo colors, modules, separator, footer line. |
 | `starship/starship.toml` | Single-line Starship prompt; directory, git, `›` character. |
@@ -23,7 +24,13 @@
 | `terminal/settings.json` | `%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json` (or first matching `Microsoft.WindowsTerminal_*` package `LocalState\settings.json` if that folder is absent) |
 | `powershell/profile.ps1` | `$PROFILE` for the host that loads it (typically **CurrentUserCurrentHost**; e.g. `Documents\PowerShell\Microsoft.PowerShell_profile.ps1` for PS 7) |
 
-Backups written by `install.ps1`: `settings.json.bak`, `$PROFILE.bak`.
+Backups from `install.ps1`:
+
+| Pattern | Use |
+|---------|-----|
+| `*.yoru-backup-*.bak` | Install-time restore points; **`-Restore`** and **`-Uninstall`** (WT) use these only. |
+| `*.yoru-session-*.bak` | Pre-restore / pre-uninstall snapshot; not picked as “latest” for restore. |
+| `*.yoru-hard-reset-*.bak` | **`-HardReset`** only. |
 
 ## Variables and placeholders to update
 

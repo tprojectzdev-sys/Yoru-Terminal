@@ -1,0 +1,70 @@
+name: Installation problem
+description: Installer, winget, paths, or permissions failed
+labels: ['installation']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. **Please attach** the output of `.\install.ps1 -Doctor` (or `.\doctor.ps1`) from a clone, if you can run it.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: One or two sentences.
+    validations:
+      required: true
+  - type: input
+    id: windows_version
+    attributes:
+      label: Windows version
+      placeholder: e.g. Windows 11 24H2 (build 26100.x)
+    validations:
+      required: true
+  - type: input
+    id: wt_version
+    attributes:
+      label: Windows Terminal version
+      placeholder: Settings → About, or winget list Microsoft.WindowsTerminal
+    validations:
+      required: false
+  - type: input
+    id: ps_version
+    attributes:
+      label: PowerShell version
+      description: Output of `$PSVersionTable.PSVersion`
+      placeholder: e.g. 7.6.1
+    validations:
+      required: true
+  - type: dropdown
+    id: host
+    attributes:
+      label: Where did you run the installer?
+      options:
+        - Windows Terminal
+        - Classic console (conhost)
+        - VS Code terminal
+        - Other / not sure
+    validations:
+      required: true
+  - type: input
+    id: install_command
+    attributes:
+      label: Install command used
+      placeholder: irm ... | iex  OR  .\install.ps1 -Full
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Doctor output (paste here)
+      description: From `.\install.ps1 -Doctor` after cloning the repo, if possible.
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Installer output / errors
+      render: shell
+    validations:
+      required: false

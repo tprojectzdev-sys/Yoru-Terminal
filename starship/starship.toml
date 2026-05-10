@@ -1,3 +1,4 @@
+# yoru-terminal: bundled starship config (installer marker — safe uninstall)
 add_newline = false
 format = "$directory$git_branch$git_status$character"
 

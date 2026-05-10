@@ -1,9 +1,11 @@
 <div align="center">
 
-<img src="assets/banner.png" alt="Yoru Terminal banner" width="100%">
+<img src="assets/banner.png" alt="Yoru Terminal" width="100%">
 
 # Yoru Terminal
- **A Premium Theme Ecosystem for Windows Terminal** 
+
+Yoru Terminal is a polished Windows Terminal setup built for people who want their command line to feel intentional. It combines Windows Terminal styling, PowerShell startup customization, Fastfetch, Starship, and custom assets into one installable package.
+
 [![Platform](https://img.shields.io/badge/Platform-Windows_11-blue?style=for-the-badge&logo=windows)](https://github.com/microsoft/terminal)
 [![Terminal](https://img.shields.io/badge/Windows_Terminal-Supported-green?style=for-the-badge&logo=windowsterminal)](https://github.com/microsoft/terminal)
 [![Shell](https://img.shields.io/badge/PowerShell-7+-black?style=for-the-badge&logo=powershell)](https://github.com/PowerShell/PowerShell)
@@ -11,159 +13,188 @@
 
 </div>
 
+**Sumi-e Crimson** is the first pack: dark acrylic, crimson accents, dragon Fastfetch art, and a tight Starship prompt. More visual packs may show up here later—the layout isn’t locked to this one look.
+
+---
+
+## Preview
+
+<div align="center">
+
+<img src="assets/screenshots/after.png" alt="Yoru Terminal — Sumi-e Crimson" width="85%">
+
+*Drop a PNG at `assets/screenshots/after.png` (see [assets/screenshots/README.md](assets/screenshots/README.md)).*
+
+</div>
+
 ---
 
 ## Quick install
-
-Run in **PowerShell** (Windows Terminal or `pwsh`):
 
 ```powershell
 irm https://raw.githubusercontent.com/tprojectzdev-sys/yoru-terminal/main/install.ps1 | iex
 ```
 
-This uses **winget** to install **fastfetch**, **Starship**, and **PowerShell 7** if needed, downloads configs from this repo, backs up your Windows Terminal `settings.json` and PowerShell profile, and **appends** the Yoru profile block. Install **Windows Terminal** from the Microsoft Store first if you do not have it (the script needs its `settings.json` path).
+Then **close every terminal window** and open **Windows Terminal** again.
 
-If you fork the repo, change `tprojectzdev-sys/yoru-terminal` in the URL to your `OWNER/REPO`.
+Prerequisites: **Windows Terminal** installed (Microsoft Store), and **winget** available for the default full install (App Installer).
 
 ---
 
-## Introduction
- **Yoru Terminal** is a curated aesthetic and theme supplier platform designed exclusively for Windows Terminal. It transcends standard dotfile repositories by providing a cohesive, highly-designed visual architecture for your workstation. 
+## What Yoru does
 
-Built for developers, creators, and power users, Yoru Terminal transforms the traditional command-line interface into a cinematic, premium environment. It acts as a modular foundation where typography, color science, acrylic transparency, and shell integration harmonize to create a superior user experience.
+| Piece | What you get |
+| --- | --- |
+| **Windows Terminal** | Dark theme, acrylic, **Yoru** color scheme, **0xProto Nerd Font Mono** in the template |
+| **PowerShell** | Marked profile block: Starship, optional Fastfetch on startup, small helpers |
+| **Fastfetch** | Layout + **dragon** ASCII (`dragon.txt`) |
+| **Starship** | Minimal prompt with crimson accent |
+| **Installer** | One command; backs up before overwriting; can install missing tools via winget |
 
-## Vision & Philosophy
+---
 
-The terminal is the modern artisan's primary tool, yet it is often neglected aesthetically. The prevailing trends tend to lean toward overloaded, hyper-saturated RGB gaming aesthetics or uninspired, chaotic configurations. 
+## What gets changed
 
-Yoru Terminal was engineered with a different philosophy:
-* **Minimalism over Clutter** : Focusing on readability and purposeful design.
-* **Cinematic Atmosphere** : Utilizing deep contrast, subtle transparency, and wallpaper-aware aesthetics.
-* **Modular Evolution** : Establishing a platform where multiple distinct visual identities can be swapped, upgraded, and maintained effortlessly.
+On your machine, the installer touches:
 
-> "A premium workspace demands premium tooling. Yoru Terminal is the bridge between uncompromising functionality and workstation elegance."
+- **Windows Terminal** — `settings.json` under your Windows Terminal package (replaced after backup).
+- **PowerShell** — a **block** appended to the **current** host `$PROFILE` (existing lines above the block stay).
+- **Fastfetch** — `%USERPROFILE%\.config\fastfetch\` (`config.jsonc`, `dragon.txt`).
+- **Starship** — `%USERPROFILE%\.config\starship\starship.toml`.
 
-## The Theme Architecture
+**Rollback modes** also clean **both** standard profile paths under your **Documents** folder (`PowerShell\` and `WindowsPowerShell\`). See `install.ps1` or [repo-structure.md](repo-structure.md) for exact paths.
 
-Yoru Terminal is not a single configuration—it is an ecosystem. The platform utilizes a modular configuration architecture that allows users to seamlessly switch between completely different visual environments.
+---
 
-Every theme pack within the Yoru ecosystem dictates the full aesthetic experience:
-1. **Windows Terminal Configuration** : Custom color palettes, typography tuning, and acrylic styling.
-2. **PowerShell Profile** : Streamlined startup configurations and prompt designs.
-3. **Fastfetch Layouts** : Tailored system information displays featuring custom ASCII art and data structures.
+## Included files (repo)
 
-## Current Flagship Theme: *Sumi-e Crimson*
+| Path | Role |
+| --- | --- |
+| `terminal/settings.json` | Windows Terminal defaults + **Yoru** scheme |
+| `powershell/profile.ps1` | Block appended to your profile |
+| `fastfetch/config.jsonc` | Fastfetch layout |
+| `fastfetch/dragon.txt` | Dragon art for Fastfetch |
+| `starship/starship.toml` | Starship config |
 
-The inaugural visual identity of the Yoru Terminal platform draws heavy inspiration from traditional Japanese ink painting (Sumi-e) fused with modern, cinematic workstation aesthetics. 
- **Theme Characteristics:** * **Palette** : Deep charcoal and cinematic blacks offset by striking crimson maple accents.
-* **Atmosphere** : Calm, premium, and minimal.
-* **Fastfetch** : A custom, intricate crimson dragon ASCII integration that greets you upon initialization.
-* **Transparency** : Carefully calibrated acrylic blur designed to interface beautifully with dark, monochrome, or cinematic wallpapers.
+---
 
-*(Note: While *Sumi-e Crimson* is the flagship, the Yoru platform is designed to house a diverse library of future visual identities.)*
+## Safety
 
-## Feature Highlights
+- **Backups** are written next to files being replaced: `*.yoru-backup-*.bak` (restore points), plus `*.yoru-session-*.bak` / `*.yoru-hard-reset-*.bak` for other operations (see [repo-structure.md](repo-structure.md)).
+- **Profile:** Yoru **appends** a marked block; it does not wipe your whole profile.
+- **Tools:** Uninstall / hard reset **do not** remove PowerShell, Windows Terminal, Fastfetch, Starship, or fonts.
+- **Audit:** Everything the script applies lives in this repo; read `install.ps1` before you run a remote one-liner.
 
-| Capability | Description |
-| :--- | :--- |
-| **Transformation System** | A complete visual overhaul for Windows Terminal, replacing default behaviors with a curated design language. |
-| **Modular Architecture** | Decoupled configuration files. Install, remove, or swap theme environments without breaking your core setup. |
-| **Typography Tuning** | Optimized font weight, line height, and character spacing for maximum readability and visual comfort. |
-| **Acrylic Styling** | Native Windows 11 acrylic transparency configurations tuned to prevent text wash-out while maintaining depth. |
-| **Fastfetch Integration** | Custom JSON-based Fastfetch layouts that replace generic system info with artful, theme-specific dashboards. |
-| **Public-Use Ready** | Designed not just for personal dotfiles, but structured safely and logically for public adoption and deployment. |
-
-## Gallery
-
-<!-- Use standard Markdown image syntax to replace these placeholders -->
-
-<div align="center">
-  <img src="assets/gallery-terminal.png" alt="Yoru Terminal — Windows Terminal with Fastfetch">
-  <br>
-  <em>Sumi-e Crimson: Fastfetch, Starship, and the Yoru palette in Windows Terminal.</em>
-</div>
+---
 
 ## Installation
 
-Prefer **[Quick install](#quick-install)** above. Manual steps below are optional.
+### Default (remote)
 
-### Prerequisites
+1. Run the [Quick install](#quick-install) line in PowerShell.
+2. Restart Windows Terminal.
+3. If something looks off, clone the repo and run diagnostics (next section).
 
-To utilize the Yoru Terminal ecosystem, ensure your system meets the following requirements:
-* **Windows Terminal** (Version 1.18 or higher)
-* **PowerShell 7+** (Core)
-* **Fastfetch** (Available via `winget install fastfetch`)
-* **Nerd Fonts** (We recommend *JetBrainsMono NF* or *CaskaydiaCove NF* for optimal iconography rendering)
+### Diagnostics
 
-### Step-by-Step Setup (manual)
+The one-liner always runs **full** install; it cannot pass flags. To run **Doctor**, use a clone or a saved script:
 
-1. **Clone the Repository**    ```powershell
-   git clone https://github.com/yourusername/yoru-terminal.git
-   cd yoru-terminal
-   ```
-
-2. **Deploy the Windows Terminal Configuration**    Open Windows Terminal settings (via `Ctrl + ,`), click on "Open JSON file", and merge the contents of `themes/sumi-e-crimson/settings.json` into your existing configuration. Alternatively, copy the specific color schemes and profile definitions.
-
-3. **Deploy the Fastfetch Theme**    Copy the Yoru Fastfetch configuration to your local Fastfetch directory:
-   ```powershell
-   Copy-Item -Path ".\themes\sumi-e-crimson\fastfetch\*" -Destination "$env:USERPROFILE\.config\fastfetch\" -Recurse -Force
-   ```
-
-4. **Update PowerShell Profile**    Link or copy the Yoru PowerShell profile to streamline your startup:
-   ```powershell
-   Copy-Item -Path ".\core\profile.ps1" -Destination $PROFILE -Force
-   ```
-
-5. **Restart Terminal**    Close and reopen Windows Terminal to initialize the Yoru environment.
-
-## Folder Structure
-
-The repository is structured to prioritize modularity and future expansion.
-
-```text
-yoru-terminal/
-├── core/
-│   ├── profile.ps1           # Core PowerShell startup logic
-│   └── modules/              # Reusable shell functions
-├── themes/
-│   ├── sumi-e-crimson/       # Flagship Theme Directory
-│   │   ├── settings.json     # Windows Terminal profile & colors
-│   │   ├── fastfetch/        # Custom JSON layout and ASCII art
-│   │   └── assets/           # Recommended wallpapers
-│   └── template/             # Boilerplate for future themes
-├── docs/                     # Advanced customization guides
-└── README.md
+```powershell
+git clone https://github.com/tprojectzdev-sys/yoru-terminal.git
+cd yoru-terminal
+.\install.ps1 -Doctor
 ```
 
-## Customization
+Or: `.\doctor.ps1`
 
-While Yoru Terminal provides a polished out-of-the-box experience, it respects the needs of power users who wish to tune their environments. 
+### Other modes (local script only)
 
-* **Adjusting Transparency** : Locate the `useAcrylic` and `opacity` keys within the Terminal `settings.json` profile block. Default opacity is calibrated to `0.85`.
-* **Modifying the Fetch Art** : The dragon ASCII art is located in `themes/sumi-e-crimson/fastfetch/logo.txt`. You can replace this file to inject your own branding while maintaining the Yoru layout engine.
-* **Color Overrides** : The `settings.json` includes a dedicated `"schemes"` array. You can adjust the crimson accents (`color1` and `color9`) to adapt the theme to your preference without breaking the underlying charcoal contrasts.
+| Mode | Command |
+| --- | --- |
+| Full (default locally) | `.\install.ps1` or `.\install.ps1 -Full` |
+| Configs only (no winget) | `.\install.ps1 -Minimal` |
+| Restore install-time backups | `.\install.ps1 -Restore` |
+| Remove Yoru files + restore Terminal from backup | `.\install.ps1 -Uninstall` |
+| Strip Yoru profile blocks + delete `settings.json` (defaults return) | `.\install.ps1 -HardReset` |
 
-## Future Roadmap
+**Hard reset from download (no clone):**
 
-The Yoru platform is in active development. Our roadmap for upcoming releases includes:
+```powershell
+$tmp = "$env:TEMP\yoru-install.ps1"
+Invoke-WebRequest "https://raw.githubusercontent.com/tprojectzdev-sys/yoru-terminal/main/install.ps1" -OutFile $tmp
+pwsh -NoProfile -ExecutionPolicy Bypass -File $tmp -HardReset
+```
 
-- [ ] **Automated Installation Engine** : A PowerShell-based CLI tool to seamlessly install and swap themes.
-- [ ] **New Visual Identity - "Glacier"** : A premium, frosted-glass aesthetic utilizing arctic blues and stark whites.
-- [ ] **New Visual Identity - "Monolith"** : A brutalist, pure-monochrome theme prioritizing zero distractions.
-- [ ] **Oh-My-Posh Integration** : Official, branded prompt themes designed to match each Yoru visual pack.
-- [ ] **Dynamic Wallpaper Sync** : Scripts to automatically adapt Terminal themes based on the active desktop background.
+Wrappers: `doctor.ps1`, `restore.ps1`, `uninstall.ps1`, `hardreset.ps1`.
 
-## Credits & Inspiration
+### Manual install
 
-This project leverages and is inspired by several outstanding open-source tools:
+If you prefer not to run the script:
 
-* [Windows Terminal](https://github.com/microsoft/terminal) by Microsoft.
-* [Fastfetch](https://github.com/fastfetch-cli/fastfetch) for the highly performant system information architecture.
-* [Nerd Fonts](https://www.nerdfonts.com/) for providing the typographic iconography that makes terminal design possible.
+1. Install **Windows Terminal**, **PowerShell 7**, **Fastfetch**, and **Starship** yourself (winget is fine).
+2. Copy `terminal/settings.json` into your Terminal **Open JSON file** workflow (merge carefully), or replace after backing up.
+3. Copy `fastfetch/*` to `%USERPROFILE%\.config\fastfetch\`.
+4. Copy `starship/starship.toml` to `%USERPROFILE%\.config\starship\`.
+5. Append the repo’s `powershell/profile.ps1` to your `$PROFILE` inside the installer’s markers (`# YORU_TERMINAL_PROFILE_BLOCK` through `# YORU_TERMINAL_PROFILE_BLOCK_END`), or read `install.ps1` / run it once to avoid mistakes.
 
 ---
 
-<div align="center">
-  <em>Designed for the modern workspace.</em><br>
-  <strong>Yoru Terminal</strong> © 2024
-</div>
+## Troubleshooting
+
+| Issue | Try |
+| --- | --- |
+| `winget` not found | Install **App Installer** from the Store. |
+| No Terminal `settings.json` | Open Windows Terminal once, then re-run the installer. |
+| `{powershell-guid}` still in JSON | Run `.\install.ps1 -Full` or `-Minimal` from a clone. |
+| Just installed PowerShell 7 | Close all terminals, open a **PowerShell 7** tab once, re-run the installer so the profile GUID matches. |
+| Dragon shows raw `$1` | Repo uses `logo.type` `"file"` in `config.jsonc`; keep that if you edit. |
+| Wrong backup keeps restoring | Use `-HardReset` or pick the right `*.yoru-backup-*.bak` manually. |
+
+For issues, paste output from `.\install.ps1 -Doctor` when you can.
+
+---
+
+## Customization
+
+- **Transparency / acrylic** — `useAcrylic`, `opacity` in the Terminal profile section of `settings.json`.
+- **Colors** — `schemes` → **Yoru** in `terminal/settings.json`.
+- **Dragon** — edit `fastfetch/dragon.txt` or paths in `fastfetch/config.jsonc`.
+- **Prompt** — `starship/starship.toml`.
+
+Re-run `.\install.ps1 -Minimal` from a clone to push repo copies back to your user config paths (backup first).
+
+---
+
+## Roadmap
+
+- More terminal style packs (layout is ready; **Sumi-e Crimson** ships first).
+- Installer and docs stay beginner-safe and backup-first.
+
+---
+
+## Repo layout
+
+```text
+yoru-terminal/
+├── assets/
+├── fastfetch/
+├── powershell/
+├── starship/
+├── terminal/
+├── install.ps1
+├── repo-structure.md
+├── README.md
+├── doctor.ps1
+├── restore.ps1
+├── uninstall.ps1
+└── hardreset.ps1
+```
+
+---
+
+## Credits
+
+- [Windows Terminal](https://github.com/microsoft/terminal)
+- [Fastfetch](https://github.com/fastfetch-cli/fastfetch)
+- [Starship](https://starship.rs/)
+- [Nerd Fonts](https://www.nerdfonts.com/)

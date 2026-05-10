@@ -1,5 +1,5 @@
 # Yoru Terminal — PowerShell Profile
-# Part of github.com/OWNER/yoru-terminal
+# Part of github.com/tprojectzdev-sys/yoru-terminal
 # Edit STARSHIP_CONFIG and fastfetch path if your setup differs
 
 Clear-Host
@@ -24,3 +24,5 @@ if ($runFastfetch) {
     $ffConfig = Join-Path $HOME '.config\fastfetch\config.jsonc'
     & fastfetch --config $ffConfig
 }
+
+# YORU_TERMINAL_PROFILE_BLOCK_END
